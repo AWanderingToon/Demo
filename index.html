@@ -3,16 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HF Manor Games</title>
-    <link rel="stylesheet" href="style.css">
+    <title>My Drive - Google Drive</title>
+    <link rel="icon" href="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png">
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --acc: #38bdf8; --txt: #f8fafc; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--txt); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        /* Login Screen */
+        #gatekeeper { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: var(--card); padding: 2.5rem; border-radius: 12px; text-align: center; width: 320px; border: 1px solid #334155; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 6px; border: 1px solid #334155; background: #000; color: var(--acc); text-align: center; outline: none; }
+        .btn { width: 100%; padding: 10px; background: var(--acc); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; }
+        
+        /* Dashboard */
+        #app { display: none; padding: 20px 5%; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        .item { background: var(--card); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+        .item:hover { border-color: var(--acc); transform: translateY(-5px); }
+        .item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
+        .item-info { padding: 10px; font-size: 12px; font-weight: bold; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Theater Mode */
+        #stage { display: none; position: fixed; inset: 0; background: #000; z-index: 9000; flex-direction: column; }
+        .stage-bar { padding: 10px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+        iframe { flex-grow: 1; border: none; width: 100%; height: 100%; }
+        .panic-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>HF Manor Games</h1>
-    </header>
-    
-    <div id="game-container" class="game-grid"></div>
 
-    <script src="script.js"></script>
+<div id="gatekeeper">
+    <div class="login-card">
+        <input type="password" id="entry-code" placeholder="Enter Password">
+        <button class="btn" onclick="verify()">ACCESS DRIVE</button>
+    </div>
+</div>
+
+<div id="app">
+    <div class="nav">
+        <div style="font-weight: bold; color: var(--acc);">Shared Files > Assets</div>
+        <button class="panic-btn" onclick="panic()">PANIC (ESC)</button>
+    </div>
+    <div class="grid" id="game-grid"></div>
+</div>
+
+<div id="stage">
+    <div class="stage-bar">
+        <button onclick="exitStage()" style="background:#475569; color:white; border:none; padding:5px 15px; border-radius:4px; cursor:pointer;">← Back</button>
+        <div id="active-title"></div>
+        <button class="panic-btn" onclick="panic()">PANIC</button>
+    </div>
+    <div id="frame-host" style="height: 100%;"></div>
+</div>
+
+<script>
+    const PASS = "asdlkn!!";
+
+    // This data is sourced directly from your games.json file
+    const GAMES_DATA = [
+        { "name": "Retro Bowl", "game_url": "https://hfmanor.com/retro-bowl", "game_image_icon": "https://hfmanor.com/image/retro-bowl" },
+        { "name": "Subway Surfers", "game_url": "https://hfmanor.com/subway-surfers", "game_image_icon": "https://hfmanor.com/image/subway-surfers" },
+        { "name": "Basketball Stars", "game_url": "https://hfmanor.com/basketball-stars", "game_image_icon": "https://hfmanor.com/image/basketball-stars" },
+        { "name": "Basket Random", "game_url": "https://hfmanor.com/basket-random", "game_image_icon": "https://hfmanor.com/image/basket-random" },
+        { "name": "Stickman Hook", "game_url": "https://hfmanor.com/stickman-hook", "game_image_icon": "https://hfmanor.com/image/stickman-hook" },
+        { "name": "Smash Karts", "game_url": "https://hfmanor.com/Smash Karts", "game_image_icon": "https://hfmanor.com/image/Smash Karts" },
+        { "name": "Cookie Clicker", "game_url": "https://hfmanor.com/cookie-clicker", "game_image_icon": "https://hfmanor.com/image/cookie-clicker" },
+        { "name": "Moto X3M", "game_url": "https://hfmanor.com/moto-X3M", "game_image_icon": "https://hfmanor.com/image/moto-X3M" },
+        { "name": "Bitlife", "game_url": "https://hfmanor.com/bitlife", "game_image_icon": "https://hfmanor.com/image/bitlife" },
+        { "name": "Superhot", "game_url": "https://hfmanor.com/superhot", "game_image_icon": "https://hfmanor.com/image/superhot" },
+        { "name": "1v1lol", "game_url": "https://hfmanor.com/1v1lol", "game_image_icon": "https://hfmanor.com/image/1v1lol" },
+        { "name": "Roblox", "game_url": "https://hfmanor.com/roblox", "game_image_icon": "https://hfmanor.com/image/roblox" },
+        { "name": "Among Us", "game_url": "https://hfmanor.com/among-us", "game_image_icon": "https://hfmanor.com/image/among-us" },
+        { "name": "Snow Rider 3D", "game_url": "https://games.mathpapers.org/snowrider3d/index.html", "game_image_icon": "https://hfmanor.com/image/Snow Rider 3D" },
+        { "name": "Minecraft", "game_url": "https://hfmanor.com/Minecraft", "game_image_icon": "https://hfmanor.com/image/Minecraft" },
+        { "name": "Madalin Stunt Cars 2", "game_url": "https://hfmanor.com/madalin-stunt-cars-2", "game_image_icon": "https://hfmanor.com/image/madalin-stunt-cars-2" },
+        { "name": "Soccer Skills", "game_url": "https://hfmanor.com/soccer-skills", "game_image_icon": "https://hfmanor.com/image/soccer-skills" },
+        { "name": "Slitherio", "game_url": "https://hfmanor.com/slitherio", "game_image_icon": "https://hfmanor.com/image/slitherio" },
+        { "name": "Slope 2", "game_url": "https://hfmanor.com/slope-2", "game_image_icon": "https://hfmanor.com/image/slope-2" },
+        { "name": "Tunnel Rush", "game_url": "https://hfmanor.com/tunnel-rush", "game_image_icon": "https://hfmanor.com/image/tunnel-rush" },
+        { "name": "Getting Over It", "game_url": "https://hfmanor.com/getting-over-it", "game_image_icon": "https://hfmanor.com/image/getting-over-it" },
+        { "name": "Monkey Mart", "game_url": "https://hfmanor.com/Monkey Mart", "game_image_icon": "https://hfmanor.com/image/Monkey Mart" },
+        { "name": "Drive Mad", "game_url": "https://hfmanor.com/drive-mad", "game_image_icon": "https://hfmanor.com/image/drive-mad" },
+        { "name": "Dreadhead Parkout", "game_url": "https://hfmanor.com/dreadhead-parkout", "game_image_icon": "https://hfmanor.com/image/dreadhead-parkout" },
+        { "name": "Happy Glass 1", "game_url": "https://hfmanor.com/happy-glass-1", "game_image_icon": "https://hfmanor.com/image/happy-glass-1" }
+    ];
+
+    function verify() {
+        if (document.getElementById('entry-code').value === PASS) {
+            document.getElementById('gatekeeper').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            render();
+        } else {
+            alert("Incorrect access code.");
+        }
+    }
+
+    function render() {
+        const grid = document.getElementById('game-grid');
+        grid.innerHTML = ''; // Prevent duplicates
+        GAMES_DATA.forEach(game => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            // Correctly uses the keys from your file to avoid "undefined" labels
+            div.innerHTML = `<img src="${game.game_image_icon}" onerror="this.src='https://via.placeholder.com/150'"><div class="item-info">${game.name}</div>`;
+            div.onclick = () => launch(game);
+            grid.appendChild(div);
+        });
+    }
+
+    function launch(game) {
+        document.getElementById('stage').style.display = 'flex';
+        document.getElementById('active-title').innerText = game.name;
+        document.getElementById('frame-host').innerHTML = `<iframe src="${game.game_url}"></iframe>`;
+    }
+
+    function exitStage() {
+        document.getElementById('stage').style.display = 'none';
+        document.getElementById('frame-host').innerHTML = '';
+    }
+
+    function panic() { window.location.replace("https://classroom.google.com"); }
+
+    window.addEventListener('keydown', (e) => { 
+        if (e.key === "Escape") panic(); 
+        if (e.key === "Enter" && document.getElementById('gatekeeper').style.display !== 'none') verify();
+    });
+</script>
 </body>
 </html>
