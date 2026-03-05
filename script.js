@@ -1,4 +1,4 @@
-// This data is merged directly from your games.json file
+// Example with a few entries from your games.json
 const games = [
     {
       "name": "Retro Bowl",
@@ -14,22 +14,17 @@ const games = [
       "name": "Basketball Stars",
       "game_url": "https://hfmanor.com/basketball-stars",
       "game_image_icon": "https://hfmanor.com/image/basketball-stars"
-    },
-    {
-      "name": "Snow Rider 3D",
-      "game_url": "https://games.mathpapers.org/snowrider3d/index.html",
-      "game_image_icon": "https://hfmanor.com/image/Snow Rider 3D"
     }
-    // ... add all other entries from your list here
 ];
 
 const container = document.getElementById('game-container');
 
 games.forEach(game => {
     const card = document.createElement('a');
-    card.href = game.game_url;
+    card.href = game.game_url; // Uses the 'game_url' key from your JSON
     card.className = 'game-card';
     
+    // Uses 'game_image_icon' and 'name' keys from your JSON
     card.innerHTML = `
         <img src="${game.game_image_icon}" alt="${game.name}">
         <p>${game.name}</p>
